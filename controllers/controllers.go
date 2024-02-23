@@ -9,6 +9,7 @@ import (
 	"latihandatabasegolang/tools"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -94,10 +95,19 @@ func AddNewUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	//Validator if user input symbol and number in input name
+	if !tools.ValidateUserName(user.Nama) {
+		res.WriteHeader(http.StatusBadRequest)
+		response := response.UserResponse{Status: http.StatusBadRequest, Message: "Input Nama invalid"}
+		json.NewEncoder(res).Encode(response)
+		return
+	}
+
+	//Data yang akan di input ke database
 	userId := tools.GenerateRandomString(10)
 	newUser := models.User{
 		Uid:    userId,
-		Nama:   user.Nama,
+		Nama:   strings.TrimSpace(user.Nama),
 		Email:  user.Email,
 		Alamat: user.Alamat,
 	}
@@ -105,7 +115,7 @@ func AddNewUser(res http.ResponseWriter, req *http.Request) {
 	result, err := userCollection.InsertOne(ctx, newUser)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		response := response.UserResponse{Status: http.StatusInternalServerError, Message: "Error", Data: map[string]interface{}{"data": err.Error()}}
+		response := response.UserResponse{Status: http.StatusInternalServerError, Message: "Gagal menginput data ke Database", Data: map[string]interface{}{"data": err.Error()}}
 		json.NewEncoder(res).Encode(response)
 		return
 	}

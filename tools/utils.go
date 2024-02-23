@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"latihandatabasegolang/models"
 	"math/big"
+	"regexp"
 )
 
 func CetakDataDiTerminal(dataDiterima models.User) {
@@ -32,5 +33,11 @@ func GenerateRandomString(panjang int) string {
 	}
 
 	return string(result)
+}
 
+func ValidateUserName(input string) bool {
+	pattern := "^[A-Za-z ]+$"
+	regex := regexp.MustCompile(pattern)
+
+	return regex.MatchString(input)
 }
