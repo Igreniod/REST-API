@@ -21,6 +21,20 @@ import (
 var userCollection *mongo.Collection = configs.GetCollection(configs.DB, os.Getenv("DATABASE_NAME"), "Users")
 var validate = validator.New()
 
+// func init() {
+// 	// Membuat indeks unik pada kolom email
+// 	emailIndex := mongo.IndexModel{
+// 		Keys:    bson.D{{Key: "email", Value: 1}},
+// 		Options: options.Index().SetUnique(true),
+// 	}
+
+// 	//Handling untuk gagal membuat indexing email unique
+// 	_, err := userCollection.Indexes().CreateOne(context.TODO(), emailIndex)
+// 	if err != nil {
+// 		fmt.Println("Gagal Membuat Indexing pada Email")
+// 	}
+// }
+
 func GetUser(res http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	params := mux.Vars(req)
@@ -110,6 +124,15 @@ func AddNewUser(res http.ResponseWriter, req *http.Request) {
 		Nama:   strings.TrimSpace(user.Nama),
 		Email:  user.Email,
 		Alamat: user.Alamat,
+	}
+
+	//check if email is duplicated
+	duplicateEmail := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&user)
+	if duplicateEmail == nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		response := response.UserResponse{Status: http.StatusBadRequest, Message: "Gagal menginput, Email telah digunakan"}
+		json.NewEncoder(res).Encode(response)
+		return
 	}
 
 	result, err := userCollection.InsertOne(ctx, newUser)
